@@ -122,7 +122,8 @@ if __name__ == "__main__":
     padded_attn_map = np.bitwise_not(np.zeros(save_attention_map.size, dtype=np.uint8))
     padded_attn_map[:bit_stream.shape[0]] = bit_stream
     padded_attn_map.tofile(os.path.join(OUTPUT_FOLDER, "attention_mask_padded.bin"))
-    for ind, (key, value) in enumerate(zip(past_key_values.key_cache, past_key_values.value_cache)):
+    # in case for newer transformer version
+    for ind, (key, value) in enumerate(past_key_values):
         BATCH_SIZE = key.shape[0]
         out_past_key = np.zeros([BATCH_SIZE, NUM_KEY_VALUE_HEADS, MAX_CACHE_LEN, HEAD_DIM], dtype=np.float32)
         out_past_value = np.zeros([BATCH_SIZE, NUM_KEY_VALUE_HEADS, MAX_CACHE_LEN, HEAD_DIM], dtype=np.float32)

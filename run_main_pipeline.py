@@ -38,7 +38,7 @@ DEFAULT_COMPILER_ARGS = [
     "65535",
     "--graph-thld",
     "65535",
-    "--use-onnx",
+    "--use-onnx-nosim", #in case of OOM
     "--kvcache",
     "1",
     "--use-hf",
@@ -293,7 +293,7 @@ def windows_rel(path: str) -> str:
     return path.replace("/", "\\")
 
 
-def build_onnx_input_shape(entry: Dict[str, Any], seq_len: int, cache_len: int) -> str:
+def build_onnx_input_shape(entry: Dict[str, Any], seq_len: int, cache_len: int, num_heads: int) -> str:
     shape_value = entry.get("onnx_input_shape")
     if shape_value is not None:
         if isinstance(shape_value, dict):
@@ -303,9 +303,39 @@ def build_onnx_input_shape(entry: Dict[str, Any], seq_len: int, cache_len: int) 
     default_shape = {
         "input_ids": [1, seq_len],
         "past_key_values": [1, cache_len],
+        # for pyop, need a more detailed info
+        "position_ids": [1, seq_len],
+        "attention_mask": [1, num_heads, seq_len, seq_len + cache_len]
     }
     return repr(default_shape)
 
+def setup_custom_pyop(base_dir: Path, model_dir: Path, config_dir: Path, dry_run: bool) -> None:
+    """
+    Prepare relative files for PyOp
+    1. my_custom_cpu_op.py -> model_dir/python/
+    2. cust_config.txt -> config_dir/ (與 gen_config.txt 存放位置一致)
+    """
+    pyop_script = "my_custom_cpu_op.py"
+    src_script = base_dir / pyop_script
+    if src_script.exists():
+        script_dst = model_dir / "python"
+        if not dry_run:
+            script_dst.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_script, script_dst / pyop_script)
+            print(f">> [PyOp] Script deployed to: {script_dst}")
+        else:
+            print(f"DRY RUN: cp {src_script} {script_dst}")
+
+    cust_cfg = "cust_config.txt"
+    src_cfg = base_dir / cust_cfg
+    if src_cfg.exists():
+        if not dry_run:
+            # 確保 config_dir 存在 (對應 gen_gen_config 的存放路徑)
+            config_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_cfg, config_dir / cust_cfg)
+            print(f">> [PyOp] Custom config deployed to: {config_dir}")
+        else:
+            print(f"DRY RUN: cp {src_cfg} {config_dir}")
 
 def run_model_pipeline(
     entry: Dict[str, Any],
@@ -328,9 +358,11 @@ def run_model_pipeline(
     model_tag = resolve_model_tag(entry)
     data_prefix = sanitize_name(str(entry.get("data_prefix", model_tag)))
 
-    model_dir = Path(entry.get("model_dir", base_dir / "nvtai_tool/input/model/customer" / model_tag))
-    data_dir = Path(entry.get("data_dir", base_dir / "nvtai_tool/input/data" / model_tag))
-    config_dir = Path(entry.get("config_dir", base_dir / "nvtai_tool/config" / model_tag / "cnn25"))
+    # choose compiler_config_dir (--config-dir) in advance
+    nvtai_root = compiler_config_dir if compiler_config_dir else (base_dir / "nvtai_tool")
+    model_dir = Path(entry.get("model_dir", nvtai_root / "input/model/customer" / model_tag))
+    data_dir = Path(entry.get("data_dir", nvtai_root / "input/data" / model_tag))
+    config_dir = Path(entry.get("config_dir", nvtai_root / "config" / model_tag / "cnn25"))
 
     prompts = resolve_prompts(entry, base_dir, fallback_prompts_file)
     ref_data_count = int(entry.get("ref_data_count", len(prompts)))
@@ -338,6 +370,8 @@ def run_model_pipeline(
     trust_remote_code = bool(entry.get("trust_remote_code", False))
 
     model_source = maybe_download_model(entry, model_id, model_dir, dry_run)
+
+    setup_custom_pyop(base_dir, model_dir, config_dir, dry_run)
 
     params = resolve_model_params(entry, model_source, trust_remote_code)
 
@@ -430,15 +464,17 @@ def run_model_pipeline(
     compiler_bin = Path(
         entry.get("compiler_bin", compiler_bin or base_dir / "../toolchain/closeprefix/bin/compiler.V30")
     )
+    # choose compiler_config_dir (--config-dir) in advance
     compiler_config_dir = Path(
-        entry.get("compiler_config_dir", compiler_config_dir or base_dir / "nvtai_tool")
+        entry.get("compiler_config_dir", nvtai_root)
     )
 
     if not compiler_bin.exists():
         raise RuntimeError(f"Compiler not found: {compiler_bin}")
 
     pattern_name = sanitize_name(str(entry.get("pattern_name", model_tag)))
-    onnx_shape = build_onnx_input_shape(entry, seq_len, cache_len)
+    # more detailed shape info
+    onnx_shape = build_onnx_input_shape(entry, seq_len, cache_len, params["attention_head"])
 
     cmd = [
         str(compiler_bin),
