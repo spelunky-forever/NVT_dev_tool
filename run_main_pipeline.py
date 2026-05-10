@@ -312,10 +312,10 @@ def build_onnx_input_shape(entry: Dict[str, Any], seq_len: int, cache_len: int, 
 def setup_custom_pyop(base_dir: Path, model_dir: Path, config_dir: Path, dry_run: bool) -> None:
     """
     Prepare relative files for PyOp
-    1. my_custom_cpu_op.py -> model_dir/python/
+    1. node_rsqrt_pyop.py -> model_dir/python/
     2. cust_config.txt -> config_dir/ (與 gen_config.txt 存放位置一致)
     """
-    pyop_script = "my_custom_cpu_op.py"
+    pyop_script = "node_rsqrt_pyop.py"
     src_script = base_dir / pyop_script
     if src_script.exists():
         script_dst = model_dir / "python"
