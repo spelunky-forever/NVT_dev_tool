@@ -1,0 +1,7 @@
+[type]=PyOp
+[name]=node_rsqrt_pyop
+[platform]=CPU
+[do_compare]=1
+[has_parm]=0
+[in_num]=1
+[out_num]=1

@@ -1,0 +1,6 @@
+[path/model_dir] = /home/haydenko/newnew_project/V30/release/ai_tool/novatek/novaic/test-tutorial/nvtai_tool/input/model/customer/test_fallback
+[path/out_dir] = /home/haydenko/newnew_project/V30/release/ai_tool/novatek/novaic/test-tutorial/nvtai_tool/output/test_fallback
+[path/ref_img_dir] = /home/haydenko/newnew_project/V30/release/ai_tool/novatek/novaic/test-tutorial/nvtai_tool/input/data/test_fallback/ref
+[path/ref_list_path] = /home/haydenko/newnew_project/V30/release/ai_tool/novatek/novaic/test-tutorial/nvtai_tool/input/data/test_fallback/ref_test.txt
+
+[ref_data/num] = 2
