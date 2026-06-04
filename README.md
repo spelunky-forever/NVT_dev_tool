@@ -22,7 +22,7 @@ PyOp  的實作與  cust config。
 
 ### 使用方式
 
-根據所選的 hugging face model，在相同資料夾下建立 `model.json` (可參考 repo)，轉換指令請執行 **`run_main_pipeline.py` ，**以下為具體指令 **(須根據 toolchain 位置修改 path)：**
+根據所選的 hugging face model，在相同資料夾下建立 `model.json` (可參考 repo)，轉換指令請執行 ```run_main_pipeline.py``` ，以下為具體指令 **(須根據 toolchain 位置修改 path)：**
 ```
 python3 run_main_pipeline.py \
   --compiler-bin /path_to_toolchain/toolchain/closeprefix/bin/compiler.V30 \
