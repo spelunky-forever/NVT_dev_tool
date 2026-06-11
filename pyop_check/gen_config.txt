@@ -4,3 +4,5 @@
 [path/ref_list_path] = /home/haydenko/newnew_project/V30/release/ai_tool/novatek/novaic/test-tutorial/nvtai_tool/input/data/test_fallback/ref_test.txt
 
 [ref_data/num] = 2
+[preproc/in/fmt] = 3
+[preproc/in/type] = 6
